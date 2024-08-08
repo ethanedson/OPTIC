@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Optic</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <div class="flex-container">
+    <h1 style="margin-top:-2px">OPTIC</h1>
+    <div class="flex-container-right">
+      <button id="capture" style="margin-top:-11px;margin-right:0px;width:35px;height:35px" title="Connect Camera">
+        <img src="icons/Connect.png" style="width:29px;height:29px;">
+      </button>
+      <button id="flip" style="margin-top:-11px;margin-right:3px; width:35px;height:35px" title="Change Camera">
+        <img src="icons/CameraChange.png" style="width:29px;height:29px;">
+      </button>
+      <select name="templates" id="templates" style="margin-top:-7px;margin-bottom:9px;margin-right:3px;border-radius:5px;border:1px solid #AAAAAA;">
+        <option value="default">Default</option>
+        <option value="custom1">Custom 1</option> 
+        <option value="custom2">Custom 2</option>
+        <option value="custom3">Custom 3</option>
+        <option value="custom4">Custom 4</option>
+        <option value="bw">Black & White</option>
+        <option value="sepia">Sepia</option>
+      </select>
+      <button id="save" style="margin-top:-11px;margin-right:0px; width:35px;height:35px" title="Save Configuration">
+        <img src="icons/Save.png" style="width:29px;height:29px;">
+      </button>
+      <button id="settings" style="margin-top:-11px; margin-right:-12px; width:35px;height:35px" title="Open Optic App Settings">
+        <img src="icons/Settings.png" style="width:29px;height:29px;">
+      </button>
+    </div>
+  </div>
+  <div>
+    <video id="video" width="640" height="480" style="display:none" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="background-color: black;"></canvas>
+  <div class="flex-container-left" style="margin-top:10px">
+    <select name="constraints" id="constraints" style="border-radius:5px;border:1px solid #AAAAAA; margin-bottom:5px"></select>
+    <div class="slider-container" style="margin-left:10px; margin-top:5px">
+      <input type="range" id="slider" min="0" max="100" value="50">
+      <span id="tooltip" class="tooltip">50</span>
+    </div>
+    <label id='M' style="margin-left:10px; margin-right:-5px; margin-top: 5px; font-size:14px; display:none" title="Set to Manual"> M </label>
+    <label class="switch" id='switchBox' style="margin-left:10px; display:none">
+        <input id='autoToggle' type="checkbox">
+        <span class="slider round"></span>
+    </label>
+    <label id='A' style="margin-left:6px; margin-top: 5px; margin-right:5px; font-size:14px; display:none" title="Set to Auto"> A </label>
+  </div>
+  <script src="models/face-api.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
