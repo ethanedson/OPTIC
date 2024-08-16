@@ -1,9 +1,11 @@
+const standbyImage = document.getElementById('standbyImage');
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const settingsButton = document.getElementById('settings');
 const captureButton = document.getElementById('capture');
 const flipButton = document.getElementById('flip');
+const statusLabel = document.getElementById('status');
 const select = document.getElementById('constraints');
 const slider = document.getElementById('slider');
 const lookupTable = {'brightness':'Brightness','contrast':'Contrast','focusDistance':'Focus Distance','frameRate':'Frame Rate','colorTemperature':'Color Temperature',
@@ -17,7 +19,9 @@ const templates = document.getElementById('templates');
 const saveButton = document.getElementById('save');
 
 var cameraID = '';
-var currentSetting = {}; 
+var cameraConfig = '';
+var currentSelect = '';
+var selectLoaded = false;
 var capabilities = {};
 var currentSettings = {};
 var updatedSettings = {};
@@ -39,6 +43,9 @@ window.onload = async () => {
 }
 
 async function init(){  
+    // Draw standby image to the canvas 
+    context.drawImage(standbyImage, 0, 0, canvas.width, canvas.height);
+
     // Check for available user cameras and create dictionary of deviceIds
     let devices = await navigator.mediaDevices.enumerateDevices();
     deviceOutput = {};
@@ -75,6 +82,7 @@ async function init(){
     }
 
     updateTemplate();
+    loadSelect();
 }
 
 async function updateTemplate(){
@@ -83,6 +91,20 @@ async function updateTemplate(){
             if (result.currentTemplate){
                 templates.value = result.currentTemplate;
                 templates.onchange();
+            }
+        });
+    }
+    catch (err) {
+        console.log('Error: ', err);
+    }
+}
+
+async function updateSelect(){
+    try{
+        await chrome.storage.local.get(['currentSelect'], (result) => {
+            if (result.currentSelect != undefined && result.currentSelect != null && result.currentSelect != ""){
+                select.value = result.currentSelect;
+                select.onchange();
             }
         });
     }
@@ -154,6 +176,7 @@ async function updateCamera (params) {
             slider.value = updatedSettings['sharpness'];
             break;
         }
+        currentSelect = Object.keys(lookupTable).find(key => lookupTable[key] === select.value);
 }
 
 async function getMedia(deviceId){
@@ -161,8 +184,9 @@ async function getMedia(deviceId){
     video.srcObject = stream;
     [track] = stream.getVideoTracks();
     capabilities = track.getCapabilities();
-    console.log('Capabilities: ', capabilities);
+    //console.log('Capabilities: ', capabilities);
     currentSettings = track.getSettings();
+    cameraID = deviceId;
     
     let array = ['deviceId', 'groupId', 'resizeMode', 'facingMode', 'height', 'width', 'aspectRatio'];
     for (let index = 0; index < array.length; index++) {
@@ -187,6 +211,8 @@ async function getMedia(deviceId){
             select.appendChild(el);
         }
     }
+    document.getElementById('status').textContent = 'Camera Connected';
+    setTimeout(() => {document.getElementById('status').textContent = '';}, 2000);
     
   })
   .catch((error) => {
@@ -322,6 +348,15 @@ async function faceUpdater(){
     setTimeout(faceUpdater, 1000); // here
 }
 
+function loadSelect(){
+    if (select.options.length == 0) {
+        setTimeout(loadSelect, 10);
+    }
+    else {
+        updateSelect();
+    }
+}
+
 captureButton.onclick = () => {
     try{
         chrome.storage.local.get(['deviceId'], (result) => {
@@ -354,32 +389,40 @@ captureButton.onclick = () => {
 
 templates.onchange = async () => {
     try{
+        cameraConfig = cameraID + '_' + templates.value;
+        //console.log('Camera Config: ', cameraConfig);
         switch (templates.value) {
             case 'default':
                 await loadDefault();
                 break;
             case 'custom1':
-                const custom1Result = await getStorage('custom1');
+                const custom1Result = await getStorage(cameraConfig);
+                //console.log('Custom1: ', custom1Result);
                 Object.keys(updatedSettings).forEach(function(keyOut) {
-                    updatedSettings[keyOut] = JSON.parse(custom1Result.custom1)[keyOut];
+                    // console.log('Key: ', keyOut);
+                    // console.log('Value: ', JSON.parse(custom1Result[cameraConfig]));
+                    updatedSettings[keyOut] = JSON.parse(custom1Result[cameraConfig])[keyOut];
                 });
                 break;
             case 'custom2':
-                const custom2Result = await getStorage('custom2');
+                const custom2Result = await getStorage(cameraConfig);
+                //console.log('Custom2: ', custom2Result);
                 Object.keys(updatedSettings).forEach(function(keyOut) {
-                    updatedSettings[keyOut] = JSON.parse(custom2Result.custom2)[keyOut];
+                    updatedSettings[keyOut] = JSON.parse(custom2Result[cameraConfig])[keyOut];
                 });
                 break;
             case 'custom3':
-                const custom3Result = await getStorage('custom3');
+                const custom3Result = await getStorage(cameraConfig);
+                //console.log('Custom3: ', custom3Result);
                 Object.keys(updatedSettings).forEach(function(keyOut) {
-                    updatedSettings[keyOut] = JSON.parse(custom3Result.custom3)[keyOut];
+                    updatedSettings[keyOut] = JSON.parse(custom3Result[cameraConfig])[keyOut];
                 });
                 break;
             case 'custom4':
-                const custom4Result = await getStorage('custom4');
+                const custom4Result = await getStorage(cameraConfig);
+                //console.log('Custom4: ', custom4Result);
                 Object.keys(updatedSettings).forEach(function(keyOut) {
-                    updatedSettings[keyOut] = JSON.parse(custom4Result.custom4)[keyOut];
+                    updatedSettings[keyOut] = JSON.parse(custom4Result[cameraConfig])[keyOut];
                 });
                 break;
             case 'bw':
@@ -402,38 +445,43 @@ templates.onchange = async () => {
     updateCamera(settingsOut);
     await chrome.storage.local.set({currentTemplate: templates.value}, () => {});
 
-    select.onchange();
 }
 
 saveButton.onclick = async () => {
+    cameraConfig = cameraID + '_' + templates.value;
     switch (templates.value){
         case 'default':
+            document.getElementById('status').textContent = 'Configuration Locked';
             break;
         case 'custom1':
-            await chrome.storage.local.set({custom1: JSON.stringify(updatedSettings)}, () => {
-                console.log(JSON.stringify(updatedSettings));
+            await chrome.storage.local.set({[cameraConfig]: JSON.stringify(updatedSettings)}, () => {
+                document.getElementById('status').textContent = 'Configuration Saved';
             });
             break;
         case 'custom2':
-            await chrome.storage.local.set({custom2: JSON.stringify(updatedSettings)}, () => {
-                console.log(JSON.stringify(updatedSettings));
+            await chrome.storage.local.set({[cameraConfig]: JSON.stringify(updatedSettings)}, () => {
+                document.getElementById('status').textContent = 'Configuration Saved';
             });
             break;
         case 'custom3':
-            await chrome.storage.local.set({custom3: JSON.stringify(updatedSettings)}, () => {
-                console.log(JSON.stringify(updatedSettings));
+            await chrome.storage.local.set({[cameraConfig]: JSON.stringify(updatedSettings)}, () => {
+                document.getElementById('status').textContent = 'Configuration Saved';
             });
             break;
         case 'custom4':
-            await chrome.storage.local.set({custom4: JSON.stringify(updatedSettings)}, () => {
-                console.log(JSON.stringify(updatedSettings));
+            await chrome.storage.local.set({[cameraConfig]: JSON.stringify(updatedSettings)}, () => {
+                document.getElementById('status').textContent = 'Configuration Saved';
             });
             break;
         case 'bw':
+            document.getElementById('status').textContent = 'Configuration Locked';
             break;
         case 'sepia':
+            document.getElementById('status').textContent = 'Configuration Locked';
             break;
         }
+
+    setTimeout(() => {document.getElementById('status').textContent = '';}, 2000);
 }
 
 flipButton.onclick = async () => {
@@ -447,7 +495,19 @@ settingsButton.onclick = ()=>{
     chrome.runtime.openOptionsPage(); 
 };
 
-select.onchange = () => {
+select.onchange = async () => {
+    try{
+        console.log('Select: ', select.value);
+        currentSelect = Object.keys(lookupTable).find(key => lookupTable[key] === select.value);
+        slider.min = capabilities[currentSelect].min;
+        slider.max = capabilities[currentSelect].max;
+        slider.step = capabilities[currentSelect].step;
+        slider.value = updatedSettings[currentSelect];
+        updateTooltip(slider.value);
+    }
+    catch (err){
+        console.log('Error: ', err);
+    }
     if (select.value == 'Focus Distance'){
         A.style.display = 'block';
         M.style.display = 'block';
@@ -471,23 +531,19 @@ select.onchange = () => {
         M.style.display = 'none';
         switchBox.style.display = 'none';
         }
-    try{
-        currentSetting = Object.keys(lookupTable).find(key => lookupTable[key] === select.value);
-        slider.min = capabilities[currentSetting].min;
-        slider.max = capabilities[currentSetting].max;
-        slider.step = capabilities[currentSetting].step;
-        slider.value = updatedSettings[currentSetting];
-        updateTooltip(slider.value);
-    }
-    catch (err){
-        console.log('Error: ', err);
-    }
+    
+    await chrome.storage.local.set({currentSelect: select.value}, () => {});
 }
 
 slider.oninput = async event => {
+    if (currentSelect === undefined || currentSelect === null || currentSelect === ''){ 
+        currentSelect = Object.keys(lookupTable).find(key => lookupTable[key] === select.value);
+        syncSelect();
+    }
+    console.log(currentSelect);
     updateTooltip(slider.value);
     try {
-        switch (currentSetting){
+        switch (currentSelect){
             case 'brightness':
                 await track.applyConstraints({advanced: [{brightness: parseInt(slider.value)}]});
                 updatedSettings['brightness'] = parseInt(slider.value);
@@ -547,7 +603,7 @@ slider.addEventListener('hover', () => {
     });
 
 switchToggle.onchange = async ()=>{
-    switch (currentSetting){
+    switch (currentSelect){
         case 'focusDistance':
             try {
                 await track.applyConstraints({advanced: [{focusMode: switchToggle.checked ? 'continuous' : 'manual'}]});
@@ -566,7 +622,7 @@ switchToggle.onchange = async ()=>{
             break;
         case 'colorTemperature':
             try {
-                console.log(switchToggle.checked ? 'continuous' : 'manual')
+                //console.log(switchToggle.checked ? 'continuous' : 'manual')
                 await track.applyConstraints({advanced: [{whiteBalanceMode: switchToggle.checked ? 'continuous' : 'manual'}]});
                 updatedSettings['whiteBalanceMode'] = switchToggle.checked ? 'continuous' : 'manual';
             } catch (err) {
