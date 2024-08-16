@@ -29,18 +29,8 @@ var settingsOut = [];
 var devicePosition = 0;
 var deviceOutput = {};
 var track;
-var faceBox = {};
 
 document.addEventListener('DOMContentLoaded', init, false);
-
-window.onload = async () => {
-    const MODEL_URL = '/models'
-    Promise.all([
-        await faceapi.loadSsdMobilenetv1Model(MODEL_URL),
-        await faceapi.loadFaceLandmarkModel(MODEL_URL),
-        await faceapi.loadFaceRecognitionModel(MODEL_URL),
-    ]);
-}
 
 async function init(){  
     // Draw standby image to the canvas 
@@ -184,8 +174,9 @@ async function getMedia(deviceId){
     video.srcObject = stream;
     [track] = stream.getVideoTracks();
     capabilities = track.getCapabilities();
-    //console.log('Capabilities: ', capabilities);
+    console.log('Capabilities: ', capabilities);
     currentSettings = track.getSettings();
+    console.log('Current Settings: ', currentSettings);
     cameraID = deviceId;
     
     let array = ['deviceId', 'groupId', 'resizeMode', 'facingMode', 'height', 'width', 'aspectRatio'];
@@ -220,7 +211,6 @@ async function getMedia(deviceId){
     alert('Error accesing webcam: Please connect a camera or enable camera permissions by clicking the "Settings" button');
   });
 
-  //setTimeout(faceUpdater, 500);
 }
 
 function getStorage(key) {
@@ -340,12 +330,6 @@ async function loadSepia(){
      });
 
     await updateCamera(settingsOut).catch((err) => {console.log('Error: ', err);});
-}
-
-async function faceUpdater(){
-    faceBox = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
-    console.log(faceBox);
-    setTimeout(faceUpdater, 1000); // here
 }
 
 function loadSelect(){
@@ -581,8 +565,9 @@ slider.oninput = async event => {
                 updatedSettings['sharpness'] = parseInt(slider.value);
                 break;
             case 'exposureCompensation':
-                await track.applyConstraints({advanced: [{exposureCompensation: parseInt(slider.value)}]});
+                await track.applyConstraints({advanced: [{exposureMode:'manual', exposureCompensation: parseInt(slider.value)}]});
                 updatedSettings['exposureCompensation'] = parseInt(slider.value);
+                updatedSettings['exposureMode'] = 'manual';
                 switchToggle.checked = false;
                 break;
             case 'exposureTime':
@@ -636,15 +621,6 @@ video.addEventListener('play', () => {
     function step() {
         context.clearRect(0, 0, canvas.width, canvas.height);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // try{
-        //     context.strokeStyle = 'red';
-        //     context.lineWidth = 2;
-        //     //console.log(faceBox);
-        //     //context.strokeRect(faceBox.detection.box._x, faceBox.detection.box._y, faceBox.detection.box._width, faceBox.detection.box._height);
-        // }
-        // catch (err){
-        //     console.log('Error: ', err);
-        // }
         requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
