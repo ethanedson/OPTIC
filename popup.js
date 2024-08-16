@@ -16,6 +16,7 @@ const tooltip = document.getElementById('tooltip');
 const templates = document.getElementById('templates');
 const saveButton = document.getElementById('save');
 
+var cameraID = '';
 var currentSetting = {}; 
 var capabilities = {};
 var currentSettings = {};
@@ -54,6 +55,7 @@ async function init(){
 
     try {
         await chrome.storage.local.get(['deviceId'], (result) => {
+            cameraID = result.deviceId;
             let possibilities = Object.keys(deviceOutput).map(function(key){return deviceOutput[key];});
             if (possibilities.includes(result.deviceId)){
                 devicePosition = Object.keys(deviceOutput).find(key => deviceOutput[key] === result.deviceId);
@@ -323,6 +325,7 @@ async function faceUpdater(){
 captureButton.onclick = () => {
     try{
         chrome.storage.local.get(['deviceId'], (result) => {
+            cameraID = result.device
             let possibilities = Object.keys(deviceOutput).map(function(key){return deviceOutput[key];});
             if (possibilities.includes(result.deviceId)){
                 devicePosition = Object.keys(deviceOutput).find(key => deviceOutput[key] === result.deviceId);
