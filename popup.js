@@ -220,7 +220,7 @@ async function getMedia(deviceId){
     alert('Error accesing webcam: Please connect a camera or enable camera permissions by clicking the "Settings" button');
   });
 
-  //faceUpdater();
+  //setTimeout(faceUpdater, 500);
 }
 
 function getStorage(key) {
@@ -636,15 +636,15 @@ video.addEventListener('play', () => {
     function step() {
         context.clearRect(0, 0, canvas.width, canvas.height);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        try{
-            context.strokeStyle = 'red';
-            context.lineWidth = 2;
-            //console.log(faceBox);
-            //context.strokeRect(faceBox.detection.box._x, faceBox.detection.box._y, faceBox.detection.box._width, faceBox.detection.box._height);
-        }
-        catch (err){
-            console.log('Error: ', err);
-        }
+        // try{
+        //     context.strokeStyle = 'red';
+        //     context.lineWidth = 2;
+        //     //console.log(faceBox);
+        //     //context.strokeRect(faceBox.detection.box._x, faceBox.detection.box._y, faceBox.detection.box._width, faceBox.detection.box._height);
+        // }
+        // catch (err){
+        //     console.log('Error: ', err);
+        // }
         requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
