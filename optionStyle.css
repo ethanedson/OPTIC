@@ -1,8 +1,18 @@
-body {
+body.dark-mode {
   font-family: Arial, sans-serif;
   padding: 10px;
   text-align: center;
+  background-color: #282727;
+  color: #c5c5c5;
   }
+
+  body.light-mode {
+    font-family: Arial, sans-serif;
+    padding: 10px;
+    text-align: center;
+    background-color: #ffffff;
+    color: #282727;
+    }
   
   h1 {
     font-size: 18px;

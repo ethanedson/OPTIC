@@ -17,6 +17,7 @@ const switchToggle = document.getElementById('autoToggle');
 const tooltip = document.getElementById('tooltip');
 const templates = document.getElementById('templates');
 const saveButton = document.getElementById('save');
+const buttons = document.getElementsByTagName('button');
 
 var cameraID = '';
 var cameraConfig = '';
@@ -31,6 +32,27 @@ var deviceOutput = {};
 var track;
 
 document.addEventListener('DOMContentLoaded', init, false);
+
+window.onload = async () => {
+    try{
+        await chrome.storage.local.get(['theme'], (result) => {
+            if (result.theme === undefined || result.theme === null || result.theme === ''){
+                chrome.storage.local.set({theme: 'dark'}, () => {});
+            }
+            if (result.theme == 'dark'){
+                document.body.classList.add('dark-mode');
+                document.body.classList.remove('light-mode');
+            }
+            else{
+                document.body.classList.add('light-mode');
+                document.body.classList.remove('dark-mode');
+            }
+        });
+    }
+    catch (err){
+        console.log('Error: ', err);
+    }
+}
 
 async function init(){  
     // Draw standby image to the canvas 
