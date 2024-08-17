@@ -3,24 +3,26 @@
     <link rel="stylesheet" type="text/css" href="optionStyle.css">
   </head>
 <body>
-    <div style="width:800px;">
-        <div>
-            <h1>OPTIC - Settings</h1>
-            <div class="flex-container-left">
-                <label style="margin-top:10px"><b>Webcam Permission: </b></label>
-                <button id="permissions" style="margin-left:20px; margin-top:8px; min-width:50px;">Enable</button>
-            </div>
-            <div class="flex-container-left">
-                <label style="margin-top:4px"><b>Auto Connect Camera: </b></label>
-                <label style="margin-left:10px; margin-right:-5px; margin-top: 5px; font-size:14px"> Off </label>
-                <label class="switch" style="margin-left:10px; margin-top: 4px;">
-                    <input id='autoConnect' type="checkbox">
-                    <span class="slider round"></span>
-                </label>
-                <label style="margin-left:6px; margin-top: 5px; font-size:14px"> On </label>
-            </div>
+    <div>
+        <div class="flex-container-left">
+            <img src="icons/icon48.png" style="width:30px;height:30px;margin-top:-8px;margin-left:-6px">
+            <h1 style="margin-top:-2px;margin-left:8px;color:#000000">OPTIC Settings</h1>
+        </div>
+        <div class="flex-container-left" style="margin-top:20px">
+            <label style="margin-top:14px;color:#414141"><b>Webcam Permission: </b></label>
+            <button id="permissions" style="margin-left:30px; margin-top:8px; min-width:50px;">Enable</button>
+        </div>
+        <div class="flex-container-left" style="margin-top:10px">
+            <label style="margin-top:4px;color:#414141"><b>Auto Connect Camera: </b></label>
+            <label style="margin-left:20px; margin-right:-5px; margin-top: 5px; font-size:14px"> Off </label>
+            <label class="switch" style="margin-left:10px; margin-top: 2px;">
+                <input id='autoConnect' type="checkbox">
+                <span class="slider round"></span>
+            </label>
+            <label style="margin-left:6px; margin-top: 5px; font-size:14px"> On </label>
         </div>
     </div>
+
 </body>
 
 <script src="options.js"></script>
