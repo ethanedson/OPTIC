@@ -1,32 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <title>OPTIC Settings</title>
     <link rel="stylesheet" type="text/css" href="optionStyle.css">
-  </head>
+</head>
 <body>
-    <div>
-        <div class="flex-container-left">
-            <img src="icons/icon48.png" style="width:30px;height:30px;margin-top:-8px;margin-left:-6px">
-            <h1 style="margin-top:-2px;margin-left:8px;">OPTIC Settings</h1>
+    <div class="flex-container-left">
+        <img src="icons/icon48.png" style="width:45px;height:45px;margin-top:14px;margin-left:-6px">
+        <h1 style="margin-top:20px;margin-left:8px;font-size: 30px;">OPTIC Settings</h1>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <ul>
+                <li class="active" data-tab="general">General</li>
+                <li data-tab="configurations">Configurations</li>
+                <li data-tab="appearance">Appearance</li>
+                <li data-tab="about">About</li>
+            </ul>
         </div>
-        <div class="flex-container-left" style="margin-top:20px">
-            <label style="margin-top:14px;"><b>Webcam Permission: </b></label>
-            <button id="permissions" style="margin-left:35px; margin-top:8px; min-width:90px;">Enable</button>
-        </div>
-        <div class="flex-container-left" style="margin-top:10px">
-            <label style="margin-top:4px;"><b>Auto Connect Camera: </b></label>
-            <label style="margin-left:25px; margin-right:-5px; margin-top: 5px; font-size:14px"> Off </label>
-            <label class="switch" style="margin-left:10px; margin-top: 2px;">
-                <input id='autoConnect' type="checkbox">
-                <span class="slider round"></span>
-            </label>
-            <label style="margin-left:6px; margin-top: 5px; font-size:14px"> On </label>
-        </div>
-        <div class="flex-container-left" style="margin-top:10px">
-            <label style="margin-top:4px;"><b>App Color Theme: </b></label>
-            <select name="theme" id="themeDropdown" style="height:30px; width:90px;margin-top:0px;margin-bottom:9px;margin-left:57px;border-radius:5px;border:1px solid #AAAAAA;">
-                <option value="light">Light</option>
-                <option value="dark">Dark</option> 
-            </select>
+        <div class="content">
+            <div id="general" class="tab-content active">
+                <div class="flex-container-left">
+                    <label style="margin-top:65px;"><b>Webcam Permission: </b></label>
+                    <button id="permissions" style="margin-left:15px; margin-top:60px; min-width:90px;">Enable</button>
+                </div> 
+                <div class="flex-container-left">
+                    <label style="margin-top:10px;"><b>Auto Connect Camera: </b></label>
+                    <label style="margin-left:15px; margin-right:0px; margin-top: 10px; font-size:14px"> Off </label>
+                    <label class="switch" style="margin-left:10px; margin-top:7px;">
+                        <input id='autoConnect' type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                    <label style="margin-left:8px; margin-top:10px; font-size:14px"> On </label>
+                </div>
+                <div class="flex-container-left">
+                    <label style="margin-left:-4px; margin-top:10px;"><b>Keyboard Shortcut: </b></label>
+                    <label style="margin-top:10px;margin-left:15px;">CTRL + O</label>
+                </div>   
+            </div>
+            <div id="configurations" class="tab-content">
+                <div class="flex-container-left">
+                    <label style="margin-top:115px;"><b>Custom 1: </b></label>
+                    <input type="text" id="custom1" maxlength=25 style="margin-left:15px; margin-top:110px; min-width:90px;">
+                </div>
+                <div class="flex-container-left">
+                    <label style="margin-top:14px;"><b>Custom 2: </b></label>
+                    <input type="text" id="custom2" maxlength=25 style="margin-left:15px; margin-top:8px; min-width:90px;">
+                </div>
+                <div class="flex-container-left">
+                    <label style="margin-top:14px;"><b>Custom 3: </b></label>
+                    <input type="text" id="custom3" maxlength=25 style="margin-left:15px; margin-top:8px; min-width:90px;">
+                </div>
+                <div class="flex-container-left">
+                    <label style="margin-top:14px;"><b>Custom 4: </b></label>
+                    <input type="text" id="custom4" maxlength=25 style="margin-left:15px; margin-top:8px; min-width:90px;">
+                </div>    
+            </div>
+            <div id="appearance" class="tab-content">
+                <div class="flex-container-left">
+                    <label style="margin-top:-10px;"><b>Color Theme: </b></label>
+                    <select name="theme" id="themeDropdown" style="height:30px; width:90px;margin-top:-16px;margin-bottom:9px;margin-left:15px;border-radius:5px;">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option> 
+                    </select>
+                </div>
+            </div>
+            <div id="about" class="tab-content">
+                <label style="font-size: 16px; text-align: center; margin-top:25px"><b>OPTIC Chrome Extension</b></label>
+                <label style="font-size: 16px; text-align: center;">Version 0.1.1</label>
+                <label style="font-size: 16px; text-align: center;">Developed by Ethan Edson</label>
+            </div>
         </div>
     </div>
 

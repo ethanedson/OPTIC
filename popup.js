@@ -42,10 +42,37 @@ window.onload = async () => {
             if (result.theme == 'dark'){
                 document.body.classList.add('dark-mode');
                 document.body.classList.remove('light-mode');
+                select.style.backgroundColor = '#333333';
+                select.style.color = '#ffffff';
+                templates.style.backgroundColor = '#333333';
+                templates.style.color = '#ffffff';
             }
             else{
                 document.body.classList.add('light-mode');
                 document.body.classList.remove('dark-mode');
+                select.style.backgroundColor = '#ffffff';
+                select.style.color = '#333333';
+                templates.style.backgroundColor = '#ffffff';
+                templates.style.color = '#333333';
+            }
+        });
+    }
+    catch (err){
+        console.log('Error: ', err);
+    }
+
+    try{
+        await chrome.storage.local.get(['configurations'], (result) => {
+            if (result.configurations === undefined || result.configurations === null || result.configurations === ''){
+                chrome.storage.local.set({configurations: {'custom1':'Custom 1','custom2':'Custom 2','custom3':'Custom 3','custom4':'Custom 4'}}, () => {});
+            }
+            else{
+                let config = result.configurations;
+                let i = 1;
+                for (let key of ['custom1', 'custom2', 'custom3', 'custom4']){
+                    templates[i].textContent = config[key];
+                    i+=1;
+                }
             }
         });
     }
@@ -587,9 +614,8 @@ slider.oninput = async event => {
                 updatedSettings['sharpness'] = parseInt(slider.value);
                 break;
             case 'exposureCompensation':
-                await track.applyConstraints({advanced: [{exposureMode:'manual', exposureCompensation: parseInt(slider.value)}]});
+                await track.applyConstraints({advanced: [{exposureCompensation: parseInt(slider.value)}]});
                 updatedSettings['exposureCompensation'] = parseInt(slider.value);
-                updatedSettings['exposureMode'] = 'manual';
                 switchToggle.checked = false;
                 break;
             case 'exposureTime':

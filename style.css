@@ -39,15 +39,15 @@ body.dark-mode {
     padding: 10px;
     width: 638px;
     height: 550px;
-    background-color: #ffffff;
+    background-color: #fafafa;
   }
 
   body.light-mode button {
     border-radius: 10px;
     width: 75px;
     height: 30px;
-    background-color: #ffffff;
-    border: 2px solid #ffffff;
+    background-color: #fafafa;
+    border: 2px solid #fafafa;
     color:#282727;
     font-size: 15px;
     display: flex;
