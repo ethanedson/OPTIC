@@ -68,7 +68,7 @@ window.onload = async () => {
             }
             else{
                 let config = result.configurations;
-                let i = 1;
+                let i = 3;
                 for (let key of ['custom1', 'custom2', 'custom3', 'custom4']){
                     templates[i].textContent = config[key];
                     i+=1;
