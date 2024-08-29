@@ -5,6 +5,8 @@ body.dark-mode {
     width: 630px;
     height: 545px;
     background-color: #282727;
+    border-radius: 10px;
+    overflow: hidden;
   }
 
   body.dark-mode button {
@@ -40,6 +42,8 @@ body.dark-mode {
     width: 630px;
     height: 545px;
     background-color: #fafafa;
+    border-radius: 10px;
+    overflow: hidden;
   }
 
   body.light-mode button {
