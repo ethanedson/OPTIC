@@ -37,25 +37,11 @@ var labelBrightness = 0;
 document.addEventListener('DOMContentLoaded', init, false);
 
 window.onload = async () => {
-    // Remove chrome local storage variable 'undefined_configurations'
-    // try{
-    //      await chrome.storage.local.remove('cameras', () => {});
-    //  }
-    //  catch (err){
-    //      console.log('Error: ', err);
-    //  }
-    try{
-        await chrome.storage.local.get(null, (result) => {
-            console.log('Local Storage: ', result);
-        });
-    }
-    catch (err){
-        console.log('Error: ', err);
-    }
     try{
         await chrome.storage.local.get(['theme'], (result) => {
             if (result.theme === undefined || result.theme === null || result.theme === ''){
                 chrome.storage.local.set({theme: 'dark'}, () => {});
+                result.theme = 'dark';
             }
             if (result.theme == 'dark'){
                 document.body.classList.add('dark-mode');
