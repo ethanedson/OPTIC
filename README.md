@@ -1,6 +1,6 @@
 # OPTIC - Webcam Control and Optimization
 
-A Chrome extension that allows users to control the hardware settings (brightness, contrast, saturation, etc.) of their webcams directly from Chrome on Windows. This extension bridges the gap between browser-based applications and native webcam controls, offering a seamless experience for users who require precise control over their video input.
+A Chrome extension that allows users to control the hardware settings (brightness, contrast, saturation, etc.) of their webcams directly from Chrome on Windows. This extension bridges the gap between browser-based applications and native webcam controls, offering a seamless experience for users who require precise control over their video inputs.
 
 ## Features
 
@@ -18,7 +18,7 @@ A Chrome extension that allows users to control the hardware settings (brightnes
 3. Open the Extension to connect your webcam
 4. Use the lower dropdown, slider, and toggles to change camera settings
 5. Navigate through templates using the top dropdown and use the Save button to save custom configuration settings after changing webcam settings
-6. Change template names in the Settings window to cusomize user experience 
+6. Change template names in the Settings window to customize user experience 
 
 ## Compatibility
 
