@@ -14,8 +14,7 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "storage",
-    "videoCapture"
+    "storage"
   ],
   "background": {
     "service_worker": "background.js"
