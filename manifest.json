@@ -2,7 +2,12 @@
   "manifest_version": 3,
   "name": "Optic - Webcam Control and Optimization",
   "version": "1.0.0",
-  "description": "A Chrome extension to tune and set the parameters of cameras in Windows",
+  "description": "An extension to control and configure hardware settings of your webcams from Chrome on Windows",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
