@@ -20,6 +20,7 @@ const saveButton = document.getElementById('save');
 const buttons = document.getElementsByTagName('button');
 
 var cameraID = '';
+var cameraLabel = '';
 var cameraConfig = '';
 var currentSelect = '';
 var selectLoaded = false;
@@ -30,10 +31,27 @@ var settingsOut = [];
 var devicePosition = 0;
 var deviceOutput = {};
 var track;
+var showLabel = false;
+var labelBrightness = 0;
 
 document.addEventListener('DOMContentLoaded', init, false);
 
 window.onload = async () => {
+    // Remove chrome local storage variable 'undefined_configurations'
+    // try{
+    //      await chrome.storage.local.remove('cameras', () => {});
+    //  }
+    //  catch (err){
+    //      console.log('Error: ', err);
+    //  }
+    try{
+        await chrome.storage.local.get(null, (result) => {
+            console.log('Local Storage: ', result);
+        });
+    }
+    catch (err){
+        console.log('Error: ', err);
+    }
     try{
         await chrome.storage.local.get(['theme'], (result) => {
             if (result.theme === undefined || result.theme === null || result.theme === ''){
@@ -54,25 +72,6 @@ window.onload = async () => {
                 select.style.color = '#333333';
                 templates.style.backgroundColor = '#ffffff';
                 templates.style.color = '#333333';
-            }
-        });
-    }
-    catch (err){
-        console.log('Error: ', err);
-    }
-
-    try{
-        await chrome.storage.local.get(['configurations'], (result) => {
-            if (result.configurations === undefined || result.configurations === null || result.configurations === ''){
-                chrome.storage.local.set({configurations: {'custom1':'Custom 1','custom2':'Custom 2','custom3':'Custom 3','custom4':'Custom 4'}}, () => {});
-            }
-            else{
-                let config = result.configurations;
-                let i = 3;
-                for (let key of ['custom1', 'custom2', 'custom3', 'custom4']){
-                    templates[i].textContent = config[key];
-                    i+=1;
-                }
             }
         });
     }
@@ -223,10 +222,45 @@ async function getMedia(deviceId){
     video.srcObject = stream;
     [track] = stream.getVideoTracks();
     capabilities = track.getCapabilities();
-    console.log('Capabilities: ', capabilities);
     currentSettings = track.getSettings();
-    console.log('Current Settings: ', currentSettings);
     cameraID = deviceId;
+    chrome.storage.local.set({deviceId: deviceId}, () => {});
+    
+    cameraLabel = track.label;
+    //console.log('Camera Label: ', cameraLabel);
+    
+    // code to check local storage cameras variable to see if devicID id is in there
+    chrome.storage.local.get(['cameras'], (result) => {
+        if (result.cameras === undefined || result.cameras === null || result.cameras === ''){
+            chrome.storage.local.set({cameras: {[cameraID]:cameraLabel}}, () => {});
+        }
+        else{
+            let camerasDict = result.cameras;
+            if (!Object.keys(camerasDict).includes(cameraID)){
+                camerasDict[cameraID] = cameraLabel;
+                chrome.storage.local.set({cameras: camerasDict}, () => {});
+            }
+        }
+    });
+
+    try{
+        chrome.storage.local.get([cameraID + '_configurations'], (result) => {
+            if (result[cameraID + '_configurations'] === undefined || result[cameraID + '_configurations'] === null || result[cameraID + '_configurations'] === ''){
+                chrome.storage.local.set({[cameraID + '_configurations']: {'custom1':'Custom 1','custom2':'Custom 2','custom3':'Custom 3','custom4':'Custom 4'}}, () => {});
+            }
+            else{
+                let config = result[cameraID + '_configurations'];
+                let i = 3;
+                for (let key of ['custom1', 'custom2', 'custom3', 'custom4']){
+                    templates[i].textContent = config[key];
+                    i+=1;
+                }
+            }
+        });
+    }
+    catch (err){
+        console.log('Error: ', err);
+    }
     
     let array = ['deviceId', 'groupId', 'resizeMode', 'facingMode', 'height', 'width', 'aspectRatio'];
     for (let index = 0; index < array.length; index++) {
@@ -251,8 +285,10 @@ async function getMedia(deviceId){
             select.appendChild(el);
         }
     }
-    document.getElementById('status').textContent = 'Camera Connected';
-    setTimeout(() => {document.getElementById('status').textContent = '';}, 2000);
+    setTimeout(() => {showLabel = true;}, 500);
+    setTimeout(() => {fontBrighten();},500);
+    setTimeout(() => {fontDarken();}, 4500);
+    setTimeout(() => {showLabel = false;}, 5000);
     
   })
   .catch((error) => {
@@ -260,6 +296,22 @@ async function getMedia(deviceId){
     alert('Error accesing webcam: Please connect a camera or enable camera permissions by clicking the "Settings" button');
   });
 
+}
+
+function fontBrighten(){
+    if (labelBrightness >= 1){
+        return;
+    }
+    labelBrightness += 0.05;
+    setTimeout(fontBrighten,25);
+}
+
+function fontDarken(){
+    if (labelBrightness <= 0){
+        return;
+    }
+    labelBrightness -= 0.05;
+    setTimeout(fontDarken, 25);
 }
 
 function getStorage(key) {
@@ -472,7 +524,9 @@ templates.onchange = async () => {
 
     settingsOut = [];
     Object.keys(updatedSettings).forEach(function(keyOut) {
-        settingsOut.push({[keyOut]: updatedSettings[keyOut]});
+        if (keyOut != 'deviceLabel'){
+            settingsOut.push({[keyOut]: updatedSettings[keyOut]});
+        }
      });
 
     updateCamera(settingsOut);
@@ -665,10 +719,28 @@ switchToggle.onchange = async ()=>{
     }
 }
 
+function roundRect(context, x, y, width, height, radius) {
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.arcTo(x + width, y, x + width, y + height, radius);
+    context.arcTo(x + width, y + height, x, y + height, radius);
+    context.arcTo(x, y + height, x, y, radius);
+    context.arcTo(x, y, x + width, y, radius);
+    context.closePath();
+    context.fill();
+}
+
 video.addEventListener('play', () => {
     function step() {
         context.clearRect(0, 0, canvas.width, canvas.height);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (showLabel){
+            context.font = '16px Arial';
+            context.fillStyle = 'rgba(0, 0, 0, ' + String(labelBrightness/2) + ')';
+            roundRect(context, 7, 7, context.measureText(cameraLabel).width + 20, 30, 8);
+            context.fillStyle = 'rgba(255, 255, 255, ' + String(labelBrightness) + ')';
+            context.fillText(cameraLabel, 17, 28);
+        }
         requestAnimationFrame(step);
     }
     requestAnimationFrame(step);

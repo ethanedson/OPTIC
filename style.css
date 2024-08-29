@@ -2,8 +2,8 @@ body.dark-mode {
     font-family: Arial, sans-serif;
     color: rgb(255, 255, 255);
     padding: 10px;
-    width: 638px;
-    height: 550px;
+    width: 630px;
+    height: 545px;
     background-color: #282727;
   }
 
@@ -37,8 +37,8 @@ body.dark-mode {
     font-family: Arial, sans-serif;
     color: rgb(12, 12, 12);
     padding: 10px;
-    width: 638px;
-    height: 550px;
+    width: 630px;
+    height: 545px;
     background-color: #fafafa;
   }
 
@@ -197,4 +197,12 @@ input[type="range"]:active + .tooltip {
   position: relative;
   width: 100%;
 }
- 
+
+.canvas-container {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.canvas-container canvas {
+  display: block;  /* To remove the extra space below the canvas */
+}

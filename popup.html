@@ -7,7 +7,7 @@
 <body>
   <div class="flex-container">
     <div class="flex-container-left">
-      <img src="icons/icon48.png" style="width:30px;height:30px;margin-top:-8px;margin-left:-4px">
+      <img src="icons/icon48.png" style="width:30px;height:30px;margin-top:-8px;margin-left:-2px">
       <h1 style="margin-top:-2px;margin-left:5px">OPTIC</h1>
     </div>
     <div class="flex-container-right">
@@ -30,14 +30,16 @@
       <button id="save" style="margin-top:-11px;margin-right:0px; width:35px;height:35px" title="Save Configuration">
         <img src="icons/Save.png" style="width:29px;height:29px;">
       </button>
-      <button id="settings" style="margin-top:-11px; margin-right:-16px; width:35px;height:35px" title="App Settings">
+      <button id="settings" style="margin-top:-11px; margin-right:-12px; width:35px;height:35px" title="App Settings">
         <img src="icons/Settings.png" style="width:29px;height:29px;">
       </button>
     </div>
   </div>
   <div>
     <video id="video" width="640" height="480" style="display:none" autoplay></video>
-    <canvas id="canvas" width="640" height="480" style="background-color: black;"></canvas>
+    <div class="canvas-container">
+      <canvas id="canvas" width="640" height="480" style="background-color: black;"></canvas>
+    </div>
   <div class="flex-container-left" style="margin-top:10px">
     <select name="constraints" id="constraints" style="border-radius:5px;border:1px solid #AAAAAA; margin-bottom:5px"></select>
     <div class="slider-container" style="margin-left:10px; margin-top:5px">
