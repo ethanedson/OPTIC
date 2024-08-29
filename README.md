@@ -11,6 +11,9 @@ A Chrome extension that allows users to control the hardware settings (brightnes
 - **User-Friendly Interface**: Simple and intuitive UI for quick adjustments.
 - **Real-Time Updates**: See the effects of your changes in real-time.
 
+## Installation
+Install through [Google Chrome App Store](https://chromewebstore.google.com/detail/optic-webcam-control-and/fkcchglpmbalkkjjphakmjjfehmmndke)
+
 ## Usage
 
 1. After installing the extension, click on the OPTIC iris icon in your Chrome toolbar.
