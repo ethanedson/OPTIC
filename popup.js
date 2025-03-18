@@ -3,6 +3,8 @@ const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const settingsButton = document.getElementById('settings');
+const coffeeButton = document.getElementById('coffee');
+const COFFEE_LICENSE_URL = 'https://edsonresearchsystems.gumroad.com/l/coffee'
 const captureButton = document.getElementById('capture');
 const flipButton = document.getElementById('flip');
 const statusLabel = document.getElementById('status');
@@ -567,6 +569,10 @@ settingsButton.onclick = ()=>{
     // Open up a new Chrome Tab with the options page
     chrome.runtime.openOptionsPage(); 
 };
+
+coffeeButton.onclick = () => {
+    chrome.tabs.create({url: COFFEE_LICENSE_URL});
+}
 
 select.onchange = async () => {
     try{
