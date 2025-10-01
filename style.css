@@ -2,7 +2,7 @@ body.dark-mode {
     font-family: Arial, sans-serif;
     color: #ffffff;
     padding: 10px;
-    width: 740px;
+    width: 715px;
     height: 560px;
     background-color: #282727;
     border-radius: 10px;
@@ -39,7 +39,7 @@ body.light-mode {
     font-family: Arial, sans-serif;
     color: #0c0c0c;
     padding: 10px;
-    width: 740px;
+    width: 715px;
     height: 560px;
     background-color: #fafafa;
     border-radius: 10px;
@@ -137,21 +137,22 @@ input[type="range"]:disabled {
     position: absolute;
     top: 0;
     right: 0;
-    width: 200px;
+    width: 205px;
     height: 535px;
-    max-width: 200px;
+    max-width: 205px;
+    min-width: 205px;
     display: grid;
-    grid-template-columns: 32px minmax(0, 1fr);
+    /* grid-template-columns: 32px minmax(0, 1fr); */
     grid-template-rows: auto auto 1fr;
     align-items: stretch;
     gap: 0;
     padding: 0;
-    background-color: rgba(23, 23, 23, 0.82);
-    backdrop-filter: blur(8px);
+    background-color: rgba(23, 23, 23, 0.7);
+    backdrop-filter: blur(10px);
     box-shadow: -8px 0 20px rgba(0, 0, 0, 0.45);
-    border-radius: 12px 0 0 12px;
+    border-radius: 12px 12px 12px 12px;
     overflow: hidden;
-    transform: translateX(0);
+    transform: translateY(0);
     transition: transform 0.3s ease, opacity 0.3s ease;
     z-index: 25;
 }
@@ -168,7 +169,9 @@ input[type="range"]:disabled {
     flex-direction: column;
     overflow-y: auto;
     padding-right: 4px;
-    gap: 4px;
+    padding-left:4px;
+    padding-top:5px;
+    gap: 0px;
 }
 
 
@@ -329,27 +332,28 @@ input:checked + .slider:before {
     grid-row: 1 / span 3;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 18px 20px 20px 20px;
+    gap: 5px;
+    padding: 10px 10px 10px 0px;
     transition: opacity 0.3s ease;
 }
 
 .controls-toolbar {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     flex-wrap: nowrap;
+    padding-left:2px;
 }
 
 
 .templates-select {
     flex: 1;
-    height: 30px;
+    height: 28px;
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.25);
     background-color: rgba(34, 34, 34, 0.65);
     color: inherit;
-    padding: 4px 10px;
+    padding: 0px 0px;
 }
 
 body.light-mode .templates-select {
@@ -386,8 +390,8 @@ body.light-mode .save-button:hover {
 }
 
 .save-icon {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
     pointer-events: none;
 }
 
@@ -400,7 +404,7 @@ body.light-mode .save-button:hover {
     justify-content: center;
     align-items: center;
     width: 100%;
-    gap: 12px;
+    gap: 0px;
     border: none;
     border-radius: 12px 0 0 12px;
     background-color: rgba(23, 23, 23, 0.85);

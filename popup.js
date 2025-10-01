@@ -8,10 +8,10 @@ const COFFEE_LICENSE_URL = 'https://edsonresearchsystems.gumroad.com/l/coffee'
 const captureButton = document.getElementById('capture');
 const flipButton = document.getElementById('flip');
 const statusLabel = document.getElementById('status');
-const lookupTable = {'brightness':'Brightness','contrast':'Contrast','focusDistance':'Focus Distance','frameRate':'Frame Rate','colorTemperature':'Color Temperature',
-                    'iso':'ISO','saturation':'Saturation','sharpness':'Sharpness','exposureCompensation':'Exposure Compensation', 'exposureTime':'Exposure Time'};
+const lookupTable = {'brightness':'Brightness','contrast':'Contrast','focusDistance':'Focus Distance','frameRate':'Frame Rate','colorTemperature':'Color Temp',
+                    'iso':'ISO','saturation':'Saturation','sharpness':'Sharpness','exposureCompensation':'Exposure Comp', 'exposureTime':'Exposure Time'};
 const controlsList = document.getElementById('constraintControls');
-const controlsToggle = document.getElementById('controlsToggle');
+const controlsToggle = document.getElementById('config');
 const controlElements = new Map();
 const AUTO_MODE_CONFIG = {
     focusDistance: { modeKey: 'focusMode', autoValue: 'continuous', manualValue: 'manual' },
@@ -41,14 +41,21 @@ var controlsCollapsed = false;
 
 if (controlsToggle) {
     const applyControlsPanelState = () => {
-        document.body.classList.toggle('controls-collapsed', controlsCollapsed);
+        //document.body.classList.toggle('controls-collapsed', controlsCollapsed);
         const expanded = !controlsCollapsed;
-        const visualLabel = expanded ? 'Hide Controls' : 'Show Controls';
-        const assistiveLabel = expanded ? 'Hide controls panel' : 'Show controls panel';
-        controlsToggle.setAttribute('aria-expanded', expanded.toString());
-        controlsToggle.setAttribute('aria-label', assistiveLabel);
-        controlsToggle.title = assistiveLabel;
-        controlsToggle.innerHTML = '<span>' + visualLabel + '</span>';
+        //const visualLabel = expanded ? 'Hide Controls' : 'Show Controls';
+        //const assistiveLabel = expanded ? 'Hide controls panel' : 'Show controls panel';
+        // controlsToggle.setAttribute('aria-expanded', expanded.toString());
+        // controlsToggle.setAttribute('aria-label', assistiveLabel);
+        // controlsToggle.title = assistiveLabel;
+        // controlsToggle.innerHTML = '<span>' + visualLabel + '</span>';
+        document.getElementById('constraintControls').style.display = expanded ? 'flex':'none'
+        if (!expanded){
+            document.getElementsByClassName('controls-column')[0].style.height = '50px';
+        }
+        else{
+            document.getElementsByClassName('controls-column')[0].style.height = '535px';
+        }
     };
 
     applyControlsPanelState();
@@ -832,7 +839,6 @@ settingsButton.onclick = ()=>{
 coffeeButton.onclick = () => {
     chrome.tabs.create({url: COFFEE_LICENSE_URL});
 }
-
 
 function roundRect(context, x, y, width, height, radius) {
     context.beginPath();
