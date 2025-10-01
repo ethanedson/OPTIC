@@ -11,7 +11,7 @@ const statusLabel = document.getElementById('status');
 const lookupTable = {'brightness':'Brightness','contrast':'Contrast','focusDistance':'Focus Distance','frameRate':'Frame Rate','colorTemperature':'Color Temp',
                     'iso':'ISO','saturation':'Saturation','sharpness':'Sharpness','exposureCompensation':'Exposure Comp', 'exposureTime':'Exposure Time'};
 const controlsList = document.getElementById('constraintControls');
-const controlsToggle = document.getElementById('config');
+const controlsToggle = document.getElementById('controlsToggle');
 const controlElements = new Map();
 const AUTO_MODE_CONFIG = {
     focusDistance: { modeKey: 'focusMode', autoValue: 'continuous', manualValue: 'manual' },
@@ -39,24 +39,36 @@ var showLabel = false;
 var labelBrightness = 0;
 var controlsCollapsed = true;
 
-if (controlsToggle) {
-    const applyControlsPanelState = () => {
+chrome.storage.local.get(['trayOpen'], (result) => {
+    let trayOpen = result.trayOpen;
+    if (trayOpen === undefined) {
+        trayOpen = false;
+        chrome.storage.local.set({ trayOpen });
+    }
+    controlsCollapsed = !trayOpen;
+
+    const updateControlsPanelState = () => {
         const expanded = !controlsCollapsed;
         document.body.classList.toggle('controls-collapsed', controlsCollapsed);
+        if (controlsToggle) {
+            controlsToggle.setAttribute('aria-expanded', expanded.toString());
+            controlsToggle.setAttribute('aria-label', expanded ? 'Hide controls panel' : 'Show controls panel');
+            controlsToggle.title = expanded ? 'Hide controls panel' : 'Show controls panel';
+        }
     };
 
-    applyControlsPanelState();
+    updateControlsPanelState();
 
-    controlsToggle.addEventListener('click', () => {
-        controlsCollapsed = !controlsCollapsed;
-        applyControlsPanelState();
-    });
+    if (controlsToggle) {
+        controlsToggle.addEventListener('click', () => {
+            controlsCollapsed = !controlsCollapsed;
+            updateControlsPanelState();
+            chrome.storage.local.set({ trayOpen: !controlsCollapsed });
+        });
+    }
+});
 
-    canvas.addEventListener('click', () => {
-        controlsCollapsed = true;
-        applyControlsPanelState();
-    });
-}
+
 
 function clampToCapability(key, value) {
     if (!capabilities || !capabilities[key]) {

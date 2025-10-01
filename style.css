@@ -14,7 +14,7 @@ body.dark-mode button {
     width: 75px;
     height: 30px;
     background-color: #282727;
-    border: 2px solid #282727;
+    border: 1px solid #282727;
     color:#282727;
     font-size: 15px;
     display: flex;
@@ -365,33 +365,19 @@ body.light-mode .templates-select {
 .save-button {
     width: 30px;
     max-width: 30px;
+    min-width:30px;
     height: 30px;
     max-height: 30px;
     display: flex;
     justify-content: center;
     align-items: center;
-    border: none;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.12);
     cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.save-button:hover {
-    background: rgba(255, 255, 255, 0.22);
-}
-
-body.light-mode .save-button {
-    background: rgba(0, 0, 0, 0.08);
-}
-
-body.light-mode .save-button:hover {
-    background: rgba(0, 0, 0, 0.14);
 }
 
 .save-icon {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     pointer-events: none;
 }
 
@@ -493,11 +479,6 @@ body.light-mode.controls-collapsed .controls-column .controls-toggle {
 
 body.light-mode .templates-select:focus-visible {
     outline: 2px solid #2b6ce8;
-}
-
-.save-button:focus-visible {
-    outline: 2px solid #4c9dff;
-    outline-offset: 2px;
 }
 
 .controls-toggle::after {
