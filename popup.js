@@ -43,26 +43,17 @@ if (controlsToggle) {
     const applyControlsPanelState = () => {
         const expanded = !controlsCollapsed;
         document.body.classList.toggle('controls-collapsed', controlsCollapsed);
-        //document.getElementById('constraintControls').style.display = expanded ? 'flex':'none'
-        //const visualLabel = expanded ? 'Hide Controls' : 'Show Controls';
-        //const assistiveLabel = expanded ? 'Hide controls panel' : 'Show controls panel';
-        // controlsToggle.setAttribute('aria-expanded', expanded.toString());
-        // controlsToggle.setAttribute('aria-label', assistiveLabel);
-        // controlsToggle.title = assistiveLabel;
-        // controlsToggle.innerHTML = '<span>' + visualLabel + '</span>';
-
-        // if (!expanded){
-        //     document.getElementsByClassName('controls-column')[0].style.height = '50px';
-        // }
-        // else{
-        //     document.getElementsByClassName('controls-column')[0].style.height = '535px';
-        // }
     };
 
     applyControlsPanelState();
 
     controlsToggle.addEventListener('click', () => {
         controlsCollapsed = !controlsCollapsed;
+        applyControlsPanelState();
+    });
+
+    canvas.addEventListener('click', () => {
+        controlsCollapsed = true;
         applyControlsPanelState();
     });
 }
@@ -293,8 +284,10 @@ function createConstraintControl(key, capability) {
         const autoWrapper = document.createElement("div");
         autoWrapper.className = "auto-toggle";
 
-        const autoLabel = document.createElement("span");
-        autoLabel.textContent = "Auto";
+        const manualLabel = document.createElement("span");
+        manualLabel.className = "auto-toggle-label";
+        manualLabel.textContent = "M";
+        autoWrapper.appendChild(manualLabel);
 
         const switchLabel = document.createElement("label");
         switchLabel.className = "switch";
@@ -307,8 +300,13 @@ function createConstraintControl(key, capability) {
 
         switchLabel.appendChild(checkbox);
         switchLabel.appendChild(sliderSpan);
-        autoWrapper.appendChild(autoLabel);
         autoWrapper.appendChild(switchLabel);
+
+        const autoLabel = document.createElement("span");
+        autoLabel.className = "auto-toggle-label";
+        autoLabel.textContent = "A";
+        autoWrapper.appendChild(autoLabel);
+
         header.appendChild(autoWrapper);
 
         checkbox.addEventListener("change", async () => {
@@ -337,7 +335,6 @@ function createConstraintControl(key, capability) {
 
     container.appendChild(sliderRow);
 
-    const valueDisplay = sliderValue;
     const hasCapability = hasNumericRange(capability);
     const min = hasCapability ? capability.min : 0;
     const max = hasCapability ? capability.max : 100;
@@ -356,9 +353,9 @@ function createConstraintControl(key, capability) {
     if (!hasCapability) {
         range.disabled = true;
         container.classList.add("constraint-unavailable");
-        valueDisplay.textContent = "Unavailable";
+        sliderValue.textContent = "Unavailable";
     } else {
-        valueDisplay.textContent = formatConstraintDisplayValue(key, initialValue);
+        sliderValue.textContent = formatConstraintDisplayValue(key, initialValue);
         if (updatedSettings[key] === undefined) {
             updatedSettings[key] = Number(initialValue);
         }
@@ -368,7 +365,8 @@ function createConstraintControl(key, capability) {
         if (range.disabled) {
             return;
         }
-        valueDisplay.textContent = formatConstraintDisplayValue(key, range.value);
+        const formattedValue = formatConstraintDisplayValue(key, range.value);
+        sliderValue.textContent = formattedValue;
         updateConstraintValueDisplay(key, range.value);
         if (toggleElements && toggleElements.checkbox.checked) {
             toggleElements.checkbox.checked = false;
@@ -385,8 +383,9 @@ function createConstraintControl(key, capability) {
         }
     });
 
-    return { container, slider: range, value: valueDisplay, toggle: toggleElements };
+    return { container, slider: range, value: sliderValue, toggle: toggleElements };
 }
+
 document.addEventListener('DOMContentLoaded', init, false);
 
 window.onload = async () => {
@@ -869,6 +868,9 @@ video.addEventListener('play', () => {
     }
     requestAnimationFrame(step);
 });
+
+
+
 
 
 
