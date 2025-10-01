@@ -502,7 +502,7 @@ async function updateCamera(params){
 }
 
 async function getMedia(deviceId){
-    navigator.mediaDevices.getUserMedia({ video: {deviceId: {ideal: deviceId}}}).then((stream) => {
+    navigator.mediaDevices.getUserMedia({ video: {deviceId: {exact: deviceId}}}).then((stream) => {
     video.srcObject = stream;
     [track] = stream.getVideoTracks();
     capabilities = track.getCapabilities() || {};
@@ -596,7 +596,6 @@ function getStorage(key) {
         });
     });
 }
-
 
 async function loadDefault(){
     let newConstraint = { advanced: [{}] };
