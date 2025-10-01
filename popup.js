@@ -37,25 +37,26 @@ var deviceOutput = {};
 var track;
 var showLabel = false;
 var labelBrightness = 0;
-var controlsCollapsed = false;
+var controlsCollapsed = true;
 
 if (controlsToggle) {
     const applyControlsPanelState = () => {
-        //document.body.classList.toggle('controls-collapsed', controlsCollapsed);
         const expanded = !controlsCollapsed;
+        document.body.classList.toggle('controls-collapsed', controlsCollapsed);
+        //document.getElementById('constraintControls').style.display = expanded ? 'flex':'none'
         //const visualLabel = expanded ? 'Hide Controls' : 'Show Controls';
         //const assistiveLabel = expanded ? 'Hide controls panel' : 'Show controls panel';
         // controlsToggle.setAttribute('aria-expanded', expanded.toString());
         // controlsToggle.setAttribute('aria-label', assistiveLabel);
         // controlsToggle.title = assistiveLabel;
         // controlsToggle.innerHTML = '<span>' + visualLabel + '</span>';
-        document.getElementById('constraintControls').style.display = expanded ? 'flex':'none'
-        if (!expanded){
-            document.getElementsByClassName('controls-column')[0].style.height = '50px';
-        }
-        else{
-            document.getElementsByClassName('controls-column')[0].style.height = '535px';
-        }
+
+        // if (!expanded){
+        //     document.getElementsByClassName('controls-column')[0].style.height = '50px';
+        // }
+        // else{
+        //     document.getElementsByClassName('controls-column')[0].style.height = '535px';
+        // }
     };
 
     applyControlsPanelState();
