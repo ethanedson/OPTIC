@@ -11,6 +11,7 @@ const statusLabel = document.getElementById('status');
 const lookupTable = {'brightness':'Brightness','contrast':'Contrast','focusDistance':'Focus Distance','frameRate':'Frame Rate','colorTemperature':'Color Temperature',
                     'iso':'ISO','saturation':'Saturation','sharpness':'Sharpness','exposureCompensation':'Exposure Compensation', 'exposureTime':'Exposure Time'};
 const controlsList = document.getElementById('constraintControls');
+const controlsToggle = document.getElementById('controlsToggle');
 const controlElements = new Map();
 const AUTO_MODE_CONFIG = {
     focusDistance: { modeKey: 'focusMode', autoValue: 'continuous', manualValue: 'manual' },
@@ -18,6 +19,7 @@ const AUTO_MODE_CONFIG = {
     colorTemperature: { modeKey: 'whiteBalanceMode', autoValue: 'continuous', manualValue: 'manual' }
 };
 const ORDERED_CONSTRAINTS = ['brightness','contrast','saturation','sharpness','iso','exposureCompensation','exposureTime','colorTemperature','focusDistance','frameRate'];
+const ALL_CONSTRAINT_KEYS = [...new Set([...ORDERED_CONSTRAINTS, ...Object.keys(lookupTable)])];
 const EXCLUDED_CONSTRAINTS = new Set(['height','width','aspectRatio']);
 const templates = document.getElementById('templates');
 const saveButton = document.getElementById('save');
@@ -35,6 +37,27 @@ var deviceOutput = {};
 var track;
 var showLabel = false;
 var labelBrightness = 0;
+var controlsCollapsed = false;
+
+if (controlsToggle) {
+    const applyControlsPanelState = () => {
+        document.body.classList.toggle('controls-collapsed', controlsCollapsed);
+        const expanded = !controlsCollapsed;
+        const visualLabel = expanded ? 'Hide Controls' : 'Show Controls';
+        const assistiveLabel = expanded ? 'Hide controls panel' : 'Show controls panel';
+        controlsToggle.setAttribute('aria-expanded', expanded.toString());
+        controlsToggle.setAttribute('aria-label', assistiveLabel);
+        controlsToggle.title = assistiveLabel;
+        controlsToggle.innerHTML = '<span>' + visualLabel + '</span>';
+    };
+
+    applyControlsPanelState();
+
+    controlsToggle.addEventListener('click', () => {
+        controlsCollapsed = !controlsCollapsed;
+        applyControlsPanelState();
+    });
+}
 
 function clampToCapability(key, value) {
     if (!capabilities || !capabilities[key]) {
@@ -88,23 +111,42 @@ function updateConstraintValueDisplay(key, value) {
 
 function syncConstraintUI() {
     controlElements.forEach((control, key) => {
-        const cap = capabilities[key];
-        if (!cap) {
+        const capability = capabilities ? capabilities[key] : undefined;
+        const hasCapability = capability && hasNumericRange(capability);
+
+        if (!hasCapability) {
+            control.container.classList.add('constraint-unavailable');
             control.slider.disabled = true;
+            control.value.textContent = 'Unavailable';
+            if (control.toggle) {
+                control.toggle.checkbox.checked = false;
+                control.toggle.checkbox.disabled = true;
+                control.toggle.wrapper.classList.add('disabled');
+            }
             return;
         }
-        const storedValue = updatedSettings[key];
-        if (storedValue !== undefined) {
+
+        control.container.classList.remove('constraint-unavailable');
+        control.slider.disabled = false;
+        control.slider.min = capability.min;
+        control.slider.max = capability.max;
+        control.slider.step = capability.step && capability.step > 0 ? capability.step : 1;
+
+        let storedValue = updatedSettings[key];
+        if (storedValue === undefined) {
+            storedValue = Number(control.slider.value);
+        } else {
             const clamped = clampToCapability(key, storedValue);
             if (control.slider.value !== String(clamped)) {
                 control.slider.value = clamped;
             }
-            updateConstraintValueDisplay(key, clamped);
-        } else {
-            updateConstraintValueDisplay(key, control.slider.value);
+            storedValue = clamped;
         }
+        updateConstraintValueDisplay(key, storedValue);
+
         const config = AUTO_MODE_CONFIG[key];
         if (config && control.toggle) {
+            control.toggle.checkbox.disabled = false;
             const modeValue = updatedSettings[config.modeKey];
             const isAuto = modeValue === config.autoValue;
             control.toggle.checkbox.checked = !!isAuto;
@@ -114,6 +156,10 @@ function syncConstraintUI() {
             } else {
                 control.toggle.wrapper.classList.remove('disabled');
             }
+        } else if (control.toggle) {
+            control.toggle.checkbox.checked = false;
+            control.toggle.checkbox.disabled = true;
+            control.toggle.wrapper.classList.add('disabled');
         }
     });
 }
@@ -123,12 +169,18 @@ async function handleAutoToggleChange(key, isAuto) {
     if (!config || !track) {
         return;
     }
+    const capability = capabilities ? capabilities[key] : undefined;
+    if (!capability || !hasNumericRange(capability)) {
+        return;
+    }
+
     const constraint = { advanced: [{}] };
     constraint.advanced[0][config.modeKey] = isAuto ? config.autoValue : config.manualValue;
     if (!isAuto) {
-        const sliderValue = Number(controlElements.get(key)?.slider.value ?? updatedSettings[key] ?? capabilities[key]?.min ?? 0);
-        constraint.advanced[0][key] = sliderValue;
-        updatedSettings[key] = sliderValue;
+        const sliderValue = Number(controlElements.get(key)?.slider.value ?? updatedSettings[key] ?? capability.min ?? 0);
+        const clampedValue = clampToCapability(key, sliderValue);
+        constraint.advanced[0][key] = clampedValue;
+        updatedSettings[key] = clampedValue;
     }
     try {
         await track.applyConstraints(constraint);
@@ -147,6 +199,11 @@ async function applyConstraintForKey(key, value) {
     if (!track) {
         return;
     }
+    const capability = capabilities ? capabilities[key] : undefined;
+    if (!capability || !hasNumericRange(capability)) {
+        return;
+    }
+
     const numericValue = clampToCapability(key, value);
     if (Number.isNaN(numericValue)) {
         return;
@@ -180,38 +237,38 @@ function renderConstraintControls() {
     }
     controlsList.innerHTML = '';
     controlElements.clear();
-    if (!capabilities) {
-        return;
-    }
-    const prioritized = ORDERED_CONSTRAINTS.filter((key) => hasNumericRange(capabilities[key]) && !EXCLUDED_CONSTRAINTS.has(key));
-    const additional = Object.keys(capabilities).filter((key) => hasNumericRange(capabilities[key]) && !EXCLUDED_CONSTRAINTS.has(key) && !prioritized.includes(key));
-    additional.sort((a, b) => formatConstraintLabel(a).localeCompare(formatConstraintLabel(b)));
-    const keys = [...prioritized, ...additional];
-    if (keys.length === 0) {
-        const message = document.createElement('p');
-        message.className = 'no-constraints';
-        message.textContent = 'No adjustable camera constraints were reported.';
-        controlsList.appendChild(message);
-        return;
-    }
+
+    const keys = ALL_CONSTRAINT_KEYS.filter((key) => lookupTable[key] && !EXCLUDED_CONSTRAINTS.has(key))
+        .sort((a, b) => formatConstraintLabel(a).localeCompare(formatConstraintLabel(b)));
     const groupContainer = document.createElement('div');
     groupContainer.className = 'constraint-group';
-    controlsList.appendChild(groupContainer);
 
     keys.forEach((key) => {
-        const control = createConstraintControl(key, capabilities[key]);
+        const capability = capabilities ? capabilities[key] : undefined;
+        const control = createConstraintControl(key, capability);
         if (control) {
             groupContainer.appendChild(control.container);
             controlElements.set(key, control);
         }
     });
+
+    if (groupContainer.children.length === 0) {
+        const message = document.createElement('p');
+        message.className = 'no-constraints';
+        message.textContent = 'No adjustable camera constraints were reported.';
+        controlsList.appendChild(message);
+    } else {
+        controlsList.appendChild(groupContainer);
+    }
+
     syncConstraintUI();
 }
 
 function createConstraintControl(key, capability) {
-    if (!hasNumericRange(capability) || EXCLUDED_CONSTRAINTS.has(key)) {
+    if (!lookupTable[key] || EXCLUDED_CONSTRAINTS.has(key)) {
         return null;
     }
+
     const container = document.createElement('div');
     container.className = 'constraint-row';
 
@@ -234,15 +291,26 @@ function createConstraintControl(key, capability) {
 
     const range = document.createElement('input');
     range.type = 'range';
-    range.min = capability.min;
-    range.max = capability.max;
-    range.step = capability.step && capability.step > 0 ? capability.step : 1;
-    range.value = capability.min;
+
+    const hasCapability = hasNumericRange(capability);
+    const min = hasCapability ? capability.min : 0;
+    const max = hasCapability ? capability.max : 100;
+    const step = hasCapability && capability.step && capability.step > 0 ? capability.step : 1;
+    let initialValue = hasCapability ? (updatedSettings[key] !== undefined ? clampToCapability(key, updatedSettings[key]) : min) : 0;
+
+    if (!Number.isFinite(initialValue)) {
+        initialValue = min;
+    }
+
+    range.min = min;
+    range.max = max;
+    range.step = step;
+    range.value = initialValue;
     rangeWrapper.appendChild(range);
     container.appendChild(rangeWrapper);
 
     let toggleElements = null;
-    if (AUTO_MODE_CONFIG[key]) {
+    if (AUTO_MODE_CONFIG[key] && hasCapability) {
         const autoWrapper = document.createElement('div');
         autoWrapper.className = 'auto-toggle';
 
@@ -265,17 +333,31 @@ function createConstraintControl(key, capability) {
         rangeWrapper.appendChild(autoWrapper);
 
         checkbox.addEventListener('change', async () => {
-        try {
-            await handleAutoToggleChange(key, checkbox.checked);
-        } catch (err) {
-            console.error('applyConstraints() failed: ', err);
-        }
-    });
+            try {
+                await handleAutoToggleChange(key, checkbox.checked);
+            } catch (err) {
+                console.error('applyConstraints() failed: ', err);
+            }
+        });
 
         toggleElements = { wrapper: autoWrapper, checkbox };
     }
 
+    if (!hasCapability) {
+        range.disabled = true;
+        container.classList.add('constraint-unavailable');
+        valueDisplay.textContent = 'Unavailable';
+    } else {
+        valueDisplay.textContent = formatConstraintDisplayValue(key, initialValue);
+        if (updatedSettings[key] === undefined) {
+            updatedSettings[key] = Number(initialValue);
+        }
+    }
+
     range.addEventListener('input', async () => {
+        if (range.disabled) {
+            return;
+        }
         updateConstraintValueDisplay(key, range.value);
         if (toggleElements && toggleElements.checkbox.checked) {
             toggleElements.checkbox.checked = false;
@@ -325,6 +407,8 @@ window.onload = async () => {
 async function init(){  
     // Draw standby image to the canvas 
     context.drawImage(standbyImage, 0, 0, canvas.width, canvas.height);
+
+    renderConstraintControls();
 
     // Check for available user cameras and create dictionary of deviceIds
     let devices = await navigator.mediaDevices.enumerateDevices();
@@ -413,7 +497,7 @@ async function getMedia(deviceId){
     navigator.mediaDevices.getUserMedia({ video: {deviceId: {ideal: deviceId}}}).then((stream) => {
     video.srcObject = stream;
     [track] = stream.getVideoTracks();
-    capabilities = track.getCapabilities();
+    capabilities = track.getCapabilities() || {};
     currentSettings = track.getSettings();
     updatedSettings = {};
     cameraID = deviceId;
@@ -776,6 +860,31 @@ video.addEventListener('play', () => {
     }
     requestAnimationFrame(step);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
