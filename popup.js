@@ -277,29 +277,67 @@ function createConstraintControl(key, capability) {
         return null;
     }
 
-    const container = document.createElement('div');
-    container.className = 'constraint-row';
+    const container = document.createElement("div");
+    container.className = "constraint-row";
 
-    const header = document.createElement('div');
-    header.className = 'constraint-header';
+    const header = document.createElement("div");
+    header.className = "constraint-header";
 
-    const label = document.createElement('span');
-    label.className = 'constraint-label';
+    const label = document.createElement("span");
+    label.className = "constraint-label";
     label.textContent = formatConstraintLabel(key);
     header.appendChild(label);
 
-    const valueDisplay = document.createElement('span');
-    valueDisplay.className = 'constraint-value';
-    header.appendChild(valueDisplay);
+    let toggleElements = null;
+    if (AUTO_MODE_CONFIG[key]) {
+        const autoWrapper = document.createElement("div");
+        autoWrapper.className = "auto-toggle";
+
+        const autoLabel = document.createElement("span");
+        autoLabel.textContent = "Auto";
+
+        const switchLabel = document.createElement("label");
+        switchLabel.className = "switch";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+
+        const sliderSpan = document.createElement("span");
+        sliderSpan.className = "slider round";
+
+        switchLabel.appendChild(checkbox);
+        switchLabel.appendChild(sliderSpan);
+        autoWrapper.appendChild(autoLabel);
+        autoWrapper.appendChild(switchLabel);
+        header.appendChild(autoWrapper);
+
+        checkbox.addEventListener("change", async () => {
+            try {
+                await handleAutoToggleChange(key, checkbox.checked);
+            } catch (err) {
+                console.error('applyConstraints() failed: ', err);
+            }
+        });
+
+        toggleElements = { wrapper: autoWrapper, checkbox };
+    }
 
     container.appendChild(header);
 
-    const rangeWrapper = document.createElement('div');
-    rangeWrapper.className = 'range-wrapper';
+    const sliderRow = document.createElement("div");
+    sliderRow.className = "slider-row";
 
-    const range = document.createElement('input');
-    range.type = 'range';
+    const range = document.createElement("input");
+    range.type = "range";
+    sliderRow.appendChild(range);
 
+    const sliderValue = document.createElement("span");
+    sliderValue.className = "slider-value";
+    sliderRow.appendChild(sliderValue);
+
+    container.appendChild(sliderRow);
+
+    const valueDisplay = sliderValue;
     const hasCapability = hasNumericRange(capability);
     const min = hasCapability ? capability.min : 0;
     const max = hasCapability ? capability.max : 100;
@@ -314,47 +352,11 @@ function createConstraintControl(key, capability) {
     range.max = max;
     range.step = step;
     range.value = initialValue;
-    rangeWrapper.appendChild(range);
-    container.appendChild(rangeWrapper);
-
-    let toggleElements = null;
-    if (AUTO_MODE_CONFIG[key] && hasCapability) {
-        const autoWrapper = document.createElement('div');
-        autoWrapper.className = 'auto-toggle';
-
-        const autoLabel = document.createElement('span');
-        autoLabel.textContent = 'Auto';
-
-        const switchLabel = document.createElement('label');
-        switchLabel.className = 'switch';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-
-        const sliderSpan = document.createElement('span');
-        sliderSpan.className = 'slider round';
-
-        switchLabel.appendChild(checkbox);
-        switchLabel.appendChild(sliderSpan);
-        autoWrapper.appendChild(autoLabel);
-        autoWrapper.appendChild(switchLabel);
-        rangeWrapper.appendChild(autoWrapper);
-
-        checkbox.addEventListener('change', async () => {
-            try {
-                await handleAutoToggleChange(key, checkbox.checked);
-            } catch (err) {
-                console.error('applyConstraints() failed: ', err);
-            }
-        });
-
-        toggleElements = { wrapper: autoWrapper, checkbox };
-    }
 
     if (!hasCapability) {
         range.disabled = true;
-        container.classList.add('constraint-unavailable');
-        valueDisplay.textContent = 'Unavailable';
+        container.classList.add("constraint-unavailable");
+        valueDisplay.textContent = "Unavailable";
     } else {
         valueDisplay.textContent = formatConstraintDisplayValue(key, initialValue);
         if (updatedSettings[key] === undefined) {
@@ -362,10 +364,11 @@ function createConstraintControl(key, capability) {
         }
     }
 
-    range.addEventListener('input', async () => {
+    range.addEventListener("input", async () => {
         if (range.disabled) {
             return;
         }
+        valueDisplay.textContent = formatConstraintDisplayValue(key, range.value);
         updateConstraintValueDisplay(key, range.value);
         if (toggleElements && toggleElements.checkbox.checked) {
             toggleElements.checkbox.checked = false;
@@ -866,6 +869,8 @@ video.addEventListener('play', () => {
     }
     requestAnimationFrame(step);
 });
+
+
 
 
 
