@@ -8,15 +8,17 @@ const COFFEE_LICENSE_URL = 'https://edsonresearchsystems.gumroad.com/l/coffee'
 const captureButton = document.getElementById('capture');
 const flipButton = document.getElementById('flip');
 const statusLabel = document.getElementById('status');
-const select = document.getElementById('constraints');
-const slider = document.getElementById('slider');
 const lookupTable = {'brightness':'Brightness','contrast':'Contrast','focusDistance':'Focus Distance','frameRate':'Frame Rate','colorTemperature':'Color Temperature',
                     'iso':'ISO','saturation':'Saturation','sharpness':'Sharpness','exposureCompensation':'Exposure Compensation', 'exposureTime':'Exposure Time'};
-const A = document.getElementById('A');
-const M = document.getElementById('M');
-const switchBox = document.getElementById('switchBox');
-const switchToggle = document.getElementById('autoToggle');
-const tooltip = document.getElementById('tooltip');
+const controlsList = document.getElementById('constraintControls');
+const controlElements = new Map();
+const AUTO_MODE_CONFIG = {
+    focusDistance: { modeKey: 'focusMode', autoValue: 'continuous', manualValue: 'manual' },
+    exposureTime: { modeKey: 'exposureMode', autoValue: 'continuous', manualValue: 'manual' },
+    colorTemperature: { modeKey: 'whiteBalanceMode', autoValue: 'continuous', manualValue: 'manual' }
+};
+const ORDERED_CONSTRAINTS = ['brightness','contrast','saturation','sharpness','iso','exposureCompensation','exposureTime','colorTemperature','focusDistance','frameRate'];
+const EXCLUDED_CONSTRAINTS = new Set(['height','width','aspectRatio']);
 const templates = document.getElementById('templates');
 const saveButton = document.getElementById('save');
 const buttons = document.getElementsByTagName('button');
@@ -24,8 +26,6 @@ const buttons = document.getElementsByTagName('button');
 var cameraID = '';
 var cameraLabel = '';
 var cameraConfig = '';
-var currentSelect = '';
-var selectLoaded = false;
 var capabilities = {};
 var currentSettings = {};
 var updatedSettings = {};
@@ -36,6 +36,264 @@ var track;
 var showLabel = false;
 var labelBrightness = 0;
 
+function clampToCapability(key, value) {
+    if (!capabilities || !capabilities[key]) {
+        return Number(value);
+    }
+    const cap = capabilities[key];
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) {
+        return numericValue;
+    }
+    const min = typeof cap.min === 'number' ? cap.min : numericValue;
+    const max = typeof cap.max === 'number' ? cap.max : numericValue;
+    return Math.min(max, Math.max(min, numericValue));
+}
+
+function hasNumericRange(capability) {
+    return capability && typeof capability.min === 'number' && typeof capability.max === 'number';
+}
+
+function formatConstraintLabel(key) {
+    if (lookupTable[key]) {
+        return lookupTable[key];
+    }
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+}
+
+function formatConstraintDisplayValue(key, value) {
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) {
+        return '';
+    }
+    if (key === 'focusDistance') {
+        return numericValue.toFixed(2);
+    }
+    if (key === 'frameRate') {
+        return numericValue.toFixed(1);
+    }
+    if (key === 'exposureTime') {
+        return Math.round(numericValue).toString();
+    }
+    return Number.isInteger(numericValue) ? numericValue.toString() : numericValue.toFixed(2);
+}
+
+function updateConstraintValueDisplay(key, value) {
+    const control = controlElements.get(key);
+    if (!control) {
+        return;
+    }
+    control.value.textContent = formatConstraintDisplayValue(key, value);
+}
+
+function syncConstraintUI() {
+    controlElements.forEach((control, key) => {
+        const cap = capabilities[key];
+        if (!cap) {
+            control.slider.disabled = true;
+            return;
+        }
+        const storedValue = updatedSettings[key];
+        if (storedValue !== undefined) {
+            const clamped = clampToCapability(key, storedValue);
+            if (control.slider.value !== String(clamped)) {
+                control.slider.value = clamped;
+            }
+            updateConstraintValueDisplay(key, clamped);
+        } else {
+            updateConstraintValueDisplay(key, control.slider.value);
+        }
+        const config = AUTO_MODE_CONFIG[key];
+        if (config && control.toggle) {
+            const modeValue = updatedSettings[config.modeKey];
+            const isAuto = modeValue === config.autoValue;
+            control.toggle.checkbox.checked = !!isAuto;
+            control.slider.disabled = !!isAuto;
+            if (isAuto) {
+                control.toggle.wrapper.classList.add('disabled');
+            } else {
+                control.toggle.wrapper.classList.remove('disabled');
+            }
+        }
+    });
+}
+
+async function handleAutoToggleChange(key, isAuto) {
+    const config = AUTO_MODE_CONFIG[key];
+    if (!config || !track) {
+        return;
+    }
+    const constraint = { advanced: [{}] };
+    constraint.advanced[0][config.modeKey] = isAuto ? config.autoValue : config.manualValue;
+    if (!isAuto) {
+        const sliderValue = Number(controlElements.get(key)?.slider.value ?? updatedSettings[key] ?? capabilities[key]?.min ?? 0);
+        constraint.advanced[0][key] = sliderValue;
+        updatedSettings[key] = sliderValue;
+    }
+    try {
+        await track.applyConstraints(constraint);
+        const latestSettings = track.getSettings();
+        if (latestSettings && typeof latestSettings[key] !== 'undefined') {
+            updatedSettings[key] = latestSettings[key];
+        }
+        updatedSettings[config.modeKey] = isAuto ? config.autoValue : config.manualValue;
+    } catch (err) {
+        console.error('applyConstraints() failed: ', err);
+    }
+    syncConstraintUI();
+}
+
+async function applyConstraintForKey(key, value) {
+    if (!track) {
+        return;
+    }
+    const numericValue = clampToCapability(key, value);
+    if (Number.isNaN(numericValue)) {
+        return;
+    }
+    const constraint = { advanced: [{}] };
+    const config = AUTO_MODE_CONFIG[key];
+    if (config) {
+        constraint.advanced[0][config.modeKey] = config.manualValue;
+        updatedSettings[config.modeKey] = config.manualValue;
+    }
+    constraint.advanced[0][key] = numericValue;
+    let appliedValue = numericValue;
+    try {
+        await track.applyConstraints(constraint);
+        const latestSettings = track.getSettings();
+        if (latestSettings && typeof latestSettings[key] !== 'undefined') {
+            appliedValue = latestSettings[key];
+        }
+        updatedSettings[key] = appliedValue;
+    } catch (err) {
+        console.error('applyConstraints() failed: ', err);
+        updatedSettings[key] = numericValue;
+    }
+    updateConstraintValueDisplay(key, appliedValue);
+    syncConstraintUI();
+}
+
+function renderConstraintControls() {
+    if (!controlsList) {
+        return;
+    }
+    controlsList.innerHTML = '';
+    controlElements.clear();
+    if (!capabilities) {
+        return;
+    }
+    const prioritized = ORDERED_CONSTRAINTS.filter((key) => hasNumericRange(capabilities[key]) && !EXCLUDED_CONSTRAINTS.has(key));
+    const additional = Object.keys(capabilities).filter((key) => hasNumericRange(capabilities[key]) && !EXCLUDED_CONSTRAINTS.has(key) && !prioritized.includes(key));
+    additional.sort((a, b) => formatConstraintLabel(a).localeCompare(formatConstraintLabel(b)));
+    const keys = [...prioritized, ...additional];
+    if (keys.length === 0) {
+        const message = document.createElement('p');
+        message.className = 'no-constraints';
+        message.textContent = 'No adjustable camera constraints were reported.';
+        controlsList.appendChild(message);
+        return;
+    }
+    const groupContainer = document.createElement('div');
+    groupContainer.className = 'constraint-group';
+    controlsList.appendChild(groupContainer);
+
+    keys.forEach((key) => {
+        const control = createConstraintControl(key, capabilities[key]);
+        if (control) {
+            groupContainer.appendChild(control.container);
+            controlElements.set(key, control);
+        }
+    });
+    syncConstraintUI();
+}
+
+function createConstraintControl(key, capability) {
+    if (!hasNumericRange(capability) || EXCLUDED_CONSTRAINTS.has(key)) {
+        return null;
+    }
+    const container = document.createElement('div');
+    container.className = 'constraint-row';
+
+    const header = document.createElement('div');
+    header.className = 'constraint-header';
+
+    const label = document.createElement('span');
+    label.className = 'constraint-label';
+    label.textContent = formatConstraintLabel(key);
+    header.appendChild(label);
+
+    const valueDisplay = document.createElement('span');
+    valueDisplay.className = 'constraint-value';
+    header.appendChild(valueDisplay);
+
+    container.appendChild(header);
+
+    const rangeWrapper = document.createElement('div');
+    rangeWrapper.className = 'range-wrapper';
+
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.min = capability.min;
+    range.max = capability.max;
+    range.step = capability.step && capability.step > 0 ? capability.step : 1;
+    range.value = capability.min;
+    rangeWrapper.appendChild(range);
+    container.appendChild(rangeWrapper);
+
+    let toggleElements = null;
+    if (AUTO_MODE_CONFIG[key]) {
+        const autoWrapper = document.createElement('div');
+        autoWrapper.className = 'auto-toggle';
+
+        const autoLabel = document.createElement('span');
+        autoLabel.textContent = 'Auto';
+
+        const switchLabel = document.createElement('label');
+        switchLabel.className = 'switch';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+
+        const sliderSpan = document.createElement('span');
+        sliderSpan.className = 'slider round';
+
+        switchLabel.appendChild(checkbox);
+        switchLabel.appendChild(sliderSpan);
+        autoWrapper.appendChild(autoLabel);
+        autoWrapper.appendChild(switchLabel);
+        rangeWrapper.appendChild(autoWrapper);
+
+        checkbox.addEventListener('change', async () => {
+        try {
+            await handleAutoToggleChange(key, checkbox.checked);
+        } catch (err) {
+            console.error('applyConstraints() failed: ', err);
+        }
+    });
+
+        toggleElements = { wrapper: autoWrapper, checkbox };
+    }
+
+    range.addEventListener('input', async () => {
+        updateConstraintValueDisplay(key, range.value);
+        if (toggleElements && toggleElements.checkbox.checked) {
+            toggleElements.checkbox.checked = false;
+            try {
+                await handleAutoToggleChange(key, false);
+            } catch (err) {
+                console.error('applyConstraints() failed: ', err);
+            }
+        }
+        try {
+            await applyConstraintForKey(key, range.value);
+        } catch (err) {
+            console.error('applyConstraints() failed: ', err);
+        }
+    });
+
+    return { container, slider: range, value: valueDisplay, toggle: toggleElements };
+}
 document.addEventListener('DOMContentLoaded', init, false);
 
 window.onload = async () => {
@@ -48,16 +306,12 @@ window.onload = async () => {
             if (result.theme == 'dark'){
                 document.body.classList.add('dark-mode');
                 document.body.classList.remove('light-mode');
-                select.style.backgroundColor = '#333333';
-                select.style.color = '#ffffff';
                 templates.style.backgroundColor = '#333333';
                 templates.style.color = '#ffffff';
             }
             else{
                 document.body.classList.add('light-mode');
                 document.body.classList.remove('dark-mode');
-                select.style.backgroundColor = '#ffffff';
-                select.style.color = '#333333';
                 templates.style.backgroundColor = '#ffffff';
                 templates.style.color = '#333333';
             }
@@ -108,7 +362,6 @@ async function init(){
     }
 
     updateTemplate();
-    loadSelect();
 }
 
 async function updateTemplate(){
@@ -117,20 +370,6 @@ async function updateTemplate(){
             if (result.currentTemplate){
                 templates.value = result.currentTemplate;
                 templates.onchange();
-            }
-        });
-    }
-    catch (err) {
-        console.log('Error: ', err);
-    }
-}
-
-async function updateSelect(){
-    try{
-        await chrome.storage.local.get(['currentSelect'], (result) => {
-            if (result.currentSelect != undefined && result.currentSelect != null && result.currentSelect != ""){
-                select.value = result.currentSelect;
-                select.onchange();
             }
         });
     }
@@ -160,49 +399,14 @@ function checkAutoConnect(){
     });
 }
 
-async function updateCamera (params) {
-    try{
+async function updateCamera(params){
+    try {
         await track.applyConstraints({advanced: params});
     }
     catch (err){
         //console.error("applyConstraints() failed: ", err);
     }
-    switch (select.value){
-        case 'Brightness':
-            slider.value = updatedSettings['brightness'];
-            break;
-        case 'Color Temperature':
-            slider.value = updatedSettings['colorTemperature'];
-            switchToggle.checked = updatedSettings['whiteBalanceMode'] == 'continuous' ? true : false;
-            break;
-        case 'Contrast':
-            slider.value = updatedSettings['contrast'];
-            break;
-        case 'Exposure Compensation':
-            slider.value = updatedSettings['exposureCompensation'];
-            break;
-        case 'Exposure Time':
-            slider.value = updatedSettings['exposureTime'];
-            switchToggle.checked = updatedSettings['exposureMode'] == 'continuous' ? true : false;
-            break;
-        case 'Focus Distance':
-            slider.value = updatedSettings['focusDistance'];
-            switchToggle.checked = updatedSettings['focusMode'] == 'continuous' ? true : false;
-            break;
-        case 'Frame Rate':
-            slider.value = updatedSettings['frameRate'];
-            break;
-        case 'ISO':
-            slider.value = updatedSettings['iso'];
-            break;
-        case 'Saturation':
-            slider.value = updatedSettings['saturation'];
-            break;
-        case 'Sharpness':
-            slider.value = updatedSettings['sharpness'];
-            break;
-        }
-        currentSelect = Object.keys(lookupTable).find(key => lookupTable[key] === select.value);
+    syncConstraintUI();
 }
 
 async function getMedia(deviceId){
@@ -211,6 +415,7 @@ async function getMedia(deviceId){
     [track] = stream.getVideoTracks();
     capabilities = track.getCapabilities();
     currentSettings = track.getSettings();
+    updatedSettings = {};
     cameraID = deviceId;
     chrome.storage.local.set({deviceId: deviceId}, () => {});
     
@@ -259,20 +464,7 @@ async function getMedia(deviceId){
         updatedSettings[keyOut] = currentSettings[keyOut];
      });
 
-    let constraints = Object.keys(capabilities);
-    var k, L = select.options.length - 1;
-    for(k = L; k >= 0; k--) {
-        select.remove(i);
-    }
-    for(var i = 0; i < constraints.length; i++) {
-        if (lookupTable[constraints[i]]){
-            var opt = lookupTable[constraints[i]];
-            var el = document.createElement("option");
-            el.textContent = opt;
-            el.value = opt;
-            select.appendChild(el);
-        }
-    }
+    renderConstraintControls();
     setTimeout(() => {showLabel = true;}, 500);
     setTimeout(() => {fontBrighten();},500);
     setTimeout(() => {fontDarken();}, 4500);
@@ -313,14 +505,6 @@ function getStorage(key) {
     });
 }
 
-function updateTooltip(value) {
-    tooltip.textContent = value;
-    const sliderRect = slider.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const thumbWidth = 16; 
-    const offset = (sliderRect.width - thumbWidth) * (value - slider.min) / (slider.max - slider.min);
-    tooltip.style.left = `${offset + thumbWidth / 2}px`;
-}
 
 async function loadDefault(){
     let newConstraint = { advanced: [{}] };
@@ -419,15 +603,6 @@ async function loadSepia(){
      });
 
     await updateCamera(settingsOut).catch((err) => {console.log('Error: ', err);});
-}
-
-function loadSelect(){
-    if (select.options.length == 0) {
-        setTimeout(loadSelect, 10);
-    }
-    else {
-        updateSelect();
-    }
 }
 
 captureButton.onclick = () => {
@@ -574,142 +749,6 @@ coffeeButton.onclick = () => {
     chrome.tabs.create({url: COFFEE_LICENSE_URL});
 }
 
-select.onchange = async () => {
-    try{
-        console.log('Select: ', select.value);
-        currentSelect = Object.keys(lookupTable).find(key => lookupTable[key] === select.value);
-        slider.min = capabilities[currentSelect].min;
-        slider.max = capabilities[currentSelect].max;
-        slider.step = capabilities[currentSelect].step;
-        slider.value = updatedSettings[currentSelect];
-        updateTooltip(slider.value);
-    }
-    catch (err){
-        console.log('Error: ', err);
-    }
-    if (select.value == 'Focus Distance'){
-        A.style.display = 'block';
-        M.style.display = 'block';
-        switchBox.style.display = 'block';
-        switchToggle.checked = updatedSettings['focusMode'] == 'continuous' ? true : false;
-        }
-    else if (select.value == 'Exposure Time'){
-        A.style.display = 'block';
-        M.style.display = 'block';
-        switchBox.style.display = 'block';
-        switchToggle.checked = updatedSettings['exposureMode'] == 'continuous' ? true : false;
-        }
-    else if (select.value == 'Color Temperature'){
-        A.style.display = 'block';
-        M.style.display = 'block';
-        switchBox.style.display = 'block';
-        switchToggle.checked = updatedSettings['whiteBalanceMode'] == 'continuous' ? true : false;
-        }
-    else {
-        A.style.display = 'none';
-        M.style.display = 'none';
-        switchBox.style.display = 'none';
-        }
-    
-    await chrome.storage.local.set({currentSelect: select.value}, () => {});
-}
-
-slider.oninput = async event => {
-    if (currentSelect === undefined || currentSelect === null || currentSelect === ''){ 
-        currentSelect = Object.keys(lookupTable).find(key => lookupTable[key] === select.value);
-        syncSelect();
-    }
-    console.log(currentSelect);
-    updateTooltip(slider.value);
-    try {
-        switch (currentSelect){
-            case 'brightness':
-                await track.applyConstraints({advanced: [{brightness: parseInt(slider.value)}]});
-                updatedSettings['brightness'] = parseInt(slider.value);
-                break;
-            case 'contrast':
-                await track.applyConstraints({advanced: [{contrast: parseInt(slider.value)}]});
-                updatedSettings['contrast'] = parseInt(slider.value);
-                break;
-            case 'focusDistance':
-                await track.applyConstraints({advanced: [{focusMode: 'manual', focusDistance: parseInt(slider.value)}]});
-                updatedSettings['focusDistance'] = parseInt(slider.value);
-                updatedSettings['focusMode'] = 'manual';
-                switchToggle.checked = false;
-                break;
-            case 'frameRate':
-                await track.applyConstraints({advanced: [{frameRate: parseInt(slider.value)}]});
-                updatedSettings['frameRate'] = parseInt(slider.value);
-                break;
-            case 'colorTemperature':
-                await track.applyConstraints({advanced: [{whiteBalanceMode:'manual', colorTemperature: parseInt(slider.value)}]});
-                updatedSettings['colorTemperature'] = parseInt(slider.value);
-                updatedSettings['whiteBalanceMode'] = 'manual';
-                switchToggle.checked = false;
-                break;
-            case 'iso':
-                await track.applyConstraints({advanced: [{iso: parseInt(slider.value)}]});
-                updatedSettings['iso'] = parseInt(slider.value);
-                break;
-            case 'saturation':
-                await track.applyConstraints({advanced: [{saturation: parseInt(slider.value)}]});
-                updatedSettings['saturation'] = parseInt(slider.value);
-                break;
-            case 'sharpness':
-                await track.applyConstraints({advanced: [{sharpness: parseInt(slider.value)}]});
-                updatedSettings['sharpness'] = parseInt(slider.value);
-                break;
-            case 'exposureCompensation':
-                await track.applyConstraints({advanced: [{exposureCompensation: parseInt(slider.value)}]});
-                updatedSettings['exposureCompensation'] = parseInt(slider.value);
-                switchToggle.checked = false;
-                break;
-            case 'exposureTime':
-                await track.applyConstraints({advanced: [{exposureMode:'manual', exposureTime: parseInt(slider.value)}]});
-                updatedSettings['exposureTime'] = parseInt(slider.value);
-                updatedSettings['exposureMode'] = 'manual';
-                switchToggle.checked = false;
-                break;
-        } 
-    }
-    catch (err) {
-        console.error("applyConstraints() failed: ", err);
-    }
-    };
-
-slider.addEventListener('hover', () => {
-    updateTooltip(slider.value);
-    });
-
-switchToggle.onchange = async ()=>{
-    switch (currentSelect){
-        case 'focusDistance':
-            try {
-                await track.applyConstraints({advanced: [{focusMode: switchToggle.checked ? 'continuous' : 'manual'}]});
-                updatedSettings['focusMode'] = switchToggle.checked ? 'continuous' : 'manual';
-            } catch (err) {
-                console.error("applyConstraints() failed: ", err);
-            }
-            break;
-        case 'exposureTime':
-            try {
-                await track.applyConstraints({advanced: [{exposureMode: switchToggle.checked ? 'continuous' : 'manual'}]});
-                updatedSettings['exposureMode'] = switchToggle.checked ? 'continuous' : 'manual';
-            } catch (err) {
-                console.error("applyConstraints() failed: ", err);
-            }
-            break;
-        case 'colorTemperature':
-            try {
-                //console.log(switchToggle.checked ? 'continuous' : 'manual')
-                await track.applyConstraints({advanced: [{whiteBalanceMode: switchToggle.checked ? 'continuous' : 'manual'}]});
-                updatedSettings['whiteBalanceMode'] = switchToggle.checked ? 'continuous' : 'manual';
-            } catch (err) {
-                console.error("applyConstraints() failed: ", err);
-            }
-            break
-    }
-}
 
 function roundRect(context, x, y, width, height, radius) {
     context.beginPath();
@@ -737,3 +776,41 @@ video.addEventListener('play', () => {
     }
     requestAnimationFrame(step);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
