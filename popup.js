@@ -66,6 +66,13 @@ chrome.storage.local.get(['trayOpen'], (result) => {
             chrome.storage.local.set({ trayOpen: !controlsCollapsed });
         });
     }
+    if (canvas){
+        canvas.addEventListener('click', () => {
+            controlsCollapsed = true;
+            updateControlsPanelState();
+            chrome.storage.local.set({ trayOpen: !controlsCollapsed });
+        } )
+    }
 });
 
 
