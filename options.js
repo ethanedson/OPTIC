@@ -2,6 +2,8 @@ const permissionsButton = document.getElementById('permissions');
 const autoConnectToggle = document.getElementById('autoConnect');
 const themeDropdown = document.getElementById('themeDropdown');
 const cameraDropdown = document.getElementById('cameraDropdown');
+const coffeeButton = document.getElementById('coffee');
+const COFFEE_LICENSE_URL = 'https://edsonresearchsystems.gumroad.com/l/coffee'
 const tabs = document.querySelectorAll('.sidebar li');
 const contents = document.querySelectorAll('.tab-content');
 const sidebar = document.querySelector('.sidebar');
@@ -87,6 +89,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
 });
+
+coffeeButton.onclick = () => {
+    chrome.tabs.create({url: COFFEE_LICENSE_URL});
+}
 
 function getFromStorage(key) {
     return new Promise((resolve, reject) => {
