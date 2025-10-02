@@ -343,7 +343,7 @@ input:checked + .slider:before {
     align-items: center;
     gap: 4px;
     flex-wrap: nowrap;
-    padding-left: 11px;
+    padding-left: 10px;
 }
 
 .templates-select {
@@ -363,11 +363,11 @@ body.light-mode .templates-select {
 }
 
 .save-button {
-    width: 30px;
-    max-width: 30px;
-    min-width:30px;
-    height: 30px;
-    max-height: 30px;
+    width: 28px;
+    max-width: 28px;
+    min-width:28px;
+    height: 28px;
+    max-height: 28px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -376,22 +376,22 @@ body.light-mode .templates-select {
 }
 
 .save-icon {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     pointer-events: none;
 }
 
 body.controls-collapsed .controls-column {
-    height: 50px;
-    max-height: 50px;
+    height: 48px;
+    max-height: 48px;
 }
 
 body.controls-collapsed .controls-list {
     display:none;
 }
 
-body.controls-collapsed .controls-toolbar  {
-    padding-left: 0px;
+body.controls-collapsed .templates-select  {
+    margin-left: -16px;
 }
 
 body.light-mode .controls-column {
@@ -435,9 +435,9 @@ body.light-mode.controls-collapsed .controls-column {
     top: 0;
     right: 0;
     width: 300px;
-    height: 50px;
+    height: 48px;
     max-width: 300px;
-    max-height: 50px;
+    max-height: 48px;
     display: grid;
     grid-template-columns: 32px minmax(0, 1fr);
     grid-template-rows: auto auto 1fr;
